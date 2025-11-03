@@ -572,7 +572,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
           {aiSummaryLoading ? (
             <div className="flex items-center space-x-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <p className="text-gray-600 text-sm">Generating contextual summary…</p>
+              <p className="text-gray-600 text-sm">Generating AI summary…</p>
             </div>
           ) : aiSummary ? (
             <div>
