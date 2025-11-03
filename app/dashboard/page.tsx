@@ -53,7 +53,7 @@ const DashboardPage: React.FC = () => {
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent bg-gradient-to-r from-purple-500 to-pink-500 mx-auto absolute top-0 left-1/2 transform -translate-x-1/2 animate-reverse-spin"></div>
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg"></div>
           </div>
-          <p className="mt-6 text-gray-700 font-medium text-lg animate-pulse">Carregando seu workspace...</p>
+          <p className="mt-6 text-gray-700 font-medium text-lg animate-pulse">Loading your workspace...</p>
           <div className="mt-2 flex justify-center space-x-1">
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
             <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce animation-delay-200"></div>

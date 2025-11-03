@@ -109,7 +109,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   const handleCreateTaskFromModal = async () => {
     try {
       if (!modalTitle.trim()) {
-        setError('Por favor, informe o nome da tarefa.');
+        setError('Please enter the task name.');
         return;
       }
 
@@ -146,12 +146,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error creating task from modal:', error);
-      setError('Falha ao criar tarefa. Tente novamente.');
+      setError('Failed to create task. Please try again.');
     }
   };
 
   // Add new task to a column
-  const handleAddTask = async (columnId: string, taskName: string = 'Nova tarefa') => {
+  const handleAddTask = async (columnId: string, taskName: string = 'New task') => {
     try {
       const order = await TaskService.getNextOrder(columnId as 'todo' | 'inprogress' | 'done', boardId);
       
@@ -209,7 +209,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
     try {
       if (!editTaskId) return;
       if (!editTitle.trim()) {
-        setError('Por favor, informe o nome da tarefa.');
+        setError('Please enter the task name.');
         return;
       }
 
@@ -250,7 +250,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
       setIsEditModalOpen(false);
     } catch (error) {
       console.error('Error updating task:', error);
-      setError('Falha ao atualizar tarefa. Tente novamente.');
+      setError('Failed to update task. Please try again.');
     }
   };
 
@@ -363,10 +363,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
       <div className="flex justify-between items-center mb-6">
         <div className="bg-gray-100 rounded-lg px-6 py-3 text-center">
           <p className="text-gray-700 text-sm">
-            Olá, Hoje temos {taskCounts.todo} tarefas em To DO, {taskCounts.inProgress} In Progress e {taskCounts.done} em Done
+            Hello! Today there are {taskCounts.todo} tasks in To Do, {taskCounts.inProgress} In Progress, and {taskCounts.done} in Done.
           </p>
           <p className="text-gray-600 text-xs mt-1">
-            Tenha um dia produtivo
+            Have a productive day.
           </p>
         </div>
         <button
@@ -416,7 +416,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                 <button
                   onClick={() => openCreateTaskModal(column.id)}
                   className="p-1 hover:bg-gray-200 rounded transition-colors"
-                  title="Adicionar tarefa"
+                  title="Add task"
                 >
                   <Plus size={16} />
                 </button>
@@ -437,7 +437,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                         ) : (
                           <>
                             <div className="bg-green-200 rounded-md p-4 text-center text-sm text-gray-700">
-                              Imagem
+                              Image
                             </div>
                             {task.content ? (
                               <p className="mt-1 text-xs text-gray-600 truncate">{task.content}</p>
@@ -457,7 +457,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                             openEditTaskModal(task.id);
                           }}
                           className="p-1 hover:bg-gray-200 rounded transition-colors"
-                          title="Editar tarefa"
+                          title="Edit task"
                         >
                           <Edit2 size={12} />
                         </button>
@@ -467,12 +467,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                           onMouseDown={(e) => { e.stopPropagation(); }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+                            if (confirm('Are you sure you want to delete this task?')) {
                               handleDeleteTask(task.id);
                             }
                           }}
                           className="p-1 hover:bg-red-200 rounded transition-colors text-red-600"
-                          title="Excluir tarefa"
+                          title="Delete task"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -490,21 +490,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
       <Modal
         isOpen={isModalOpen}
         onRequestClose={closeCreateTaskModal}
-        contentLabel="Adicionar uma tarefa"
+        contentLabel="Add a task"
         className="relative z-[1001] max-w-sm w-full bg-white rounded-lg shadow-lg p-4 mx-auto outline-none"
         overlayClassName="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center"
       >
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Adicione uma tarefa</h2>
+          <h2 className="text-lg font-semibold">Add a task</h2>
           <input
             type="text"
-            placeholder="Adicione o nome da task"
+            placeholder="Enter task name"
             value={modalTitle}
             onChange={(e) => setModalTitle(e.target.value)}
             className="w-full border rounded px-3 py-2 text-sm"
           />
           <textarea
-            placeholder="Descrição da tarefa (opcional)"
+            placeholder="Task description (optional)"
             value={modalDescription}
             onChange={(e) => setModalDescription(e.target.value)}
             className="w-full border rounded px-3 py-2 text-sm min-h-[80px]"
@@ -521,12 +521,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
             ))}
           </div>
           <div>
-            <label className="block mb-1 text-sm">Upload Imagem</label>
+            <label className="block mb-1 text-sm">Upload Image</label>
             <input type="file" accept="image/*" onChange={handleModalFileChange} className="w-full" />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button onClick={closeCreateTaskModal} className="px-3 py-1 text-sm rounded border">Cancelar</button>
-            <button onClick={handleCreateTaskFromModal} className="px-3 py-1 text-sm rounded bg-blue-500 text-white">Criar</button>
+            <button onClick={closeCreateTaskModal} className="px-3 py-1 text-sm rounded border">Cancel</button>
+            <button onClick={handleCreateTaskFromModal} className="px-3 py-1 text-sm rounded bg-blue-500 text-white">Create</button>
           </div>
         </div>
       </Modal>
@@ -535,21 +535,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
       <Modal
         isOpen={isEditModalOpen}
         onRequestClose={closeEditTaskModal}
-        contentLabel="Editar tarefa"
+        contentLabel="Edit task"
         className="relative z-[1001] max-w-sm w-full bg-white rounded-lg shadow-lg p-4 mx-auto outline-none"
         overlayClassName="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center"
       >
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Editar tarefa</h2>
+          <h2 className="text-lg font-semibold">Edit task</h2>
           <input
             type="text"
-            placeholder="Nome da tarefa"
+            placeholder="Task name"
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
             className="w-full border rounded px-3 py-2 text-sm"
           />
           <textarea
-            placeholder="Descrição da tarefa"
+            placeholder="Task description"
             value={editDescription}
             onChange={(e) => setEditDescription(e.target.value)}
             className="w-full border rounded px-3 py-2 text-sm min-h-[80px]"
@@ -566,8 +566,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
             ))}
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button onClick={closeEditTaskModal} className="px-3 py-1 text-sm rounded border">Cancelar</button>
-            <button onClick={handleUpdateTaskFromModal} className="px-3 py-1 text-sm rounded bg-blue-500 text-white">Salvar</button>
+            <button onClick={closeEditTaskModal} className="px-3 py-1 text-sm rounded border">Cancel</button>
+            <button onClick={handleUpdateTaskFromModal} className="px-3 py-1 text-sm rounded bg-blue-500 text-white">Save</button>
           </div>
         </div>
       </Modal>
