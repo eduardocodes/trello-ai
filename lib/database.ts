@@ -208,11 +208,11 @@ export class TaskService {
   }
 
   /**
-   * Get image URL for preview
+   * Get image URL for display
    * @param fileId The file ID
    * @returns string The image URL
    */
   static getImageUrl(fileId: string): string {
-    return storage.getFilePreview(STORAGE_BUCKET_ID, fileId);
+    return storage.getFileView(STORAGE_BUCKET_ID, fileId);
   }
 }
