@@ -503,7 +503,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   return (
     <div className="flex flex-col h-full">
       {/* Summary Message */}
-      <div className="flex justify-center mb-6">
+      <div className="flex flex-col items-center mb-6">
+        <h3 className="text-lg font-semibold text-gray-700 mb-3">AI Summary</h3>
         <div className="bg-gray-100 rounded-lg px-6 py-3 text-center min-h-[60px] flex items-center justify-center">
           {aiSummaryLoading ? (
             <div className="flex items-center space-x-2">
