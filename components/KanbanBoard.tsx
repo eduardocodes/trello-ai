@@ -498,6 +498,20 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
     };
   };
 
+  // Get header color classes based on column ID
+  const getHeaderColorClasses = (columnId: string) => {
+    switch (columnId) {
+      case 'todo':
+        return 'text-red-600 bg-red-50 border-l-4 border-red-500 px-3 py-1 rounded-r-md font-semibold';
+      case 'inprogress':
+        return 'text-blue-600 bg-blue-50 border-l-4 border-blue-500 px-3 py-1 rounded-r-md font-semibold';
+      case 'done':
+        return 'text-green-600 bg-green-50 border-l-4 border-green-500 px-3 py-1 rounded-r-md font-semibold';
+      default:
+        return 'text-gray-600 font-semibold';
+    }
+  };
+
   const taskCounts = getTaskCounts();
 
   return (
@@ -568,7 +582,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
           {(column: KanbanColumn) => (
             <ShadcnKanbanBoard key={column.id} id={column.id} className="h-full">
               <KanbanHeader className="flex items-center justify-between">
-                <span>{column.name}</span>
+                <span className={getHeaderColorClasses(column.id)}>{column.name}</span>
                 <button
                   onClick={() => openCreateTaskModal(column.id)}
                   className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer"
