@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Loader2 } from 'lucide-react';
+import Modal from 'react-modal';
 import {
   KanbanProvider,
   KanbanBoard as ShadcnKanbanBoard,
@@ -40,6 +41,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Modal state for creating a task
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalColumn, setModalColumn] = useState<'todo' | 'inprogress' | 'done'>('todo');
+  const [modalImageFile, setModalImageFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    // Bind react-modal to the app element for accessibility
+    Modal.setAppElement('body');
+  }, []);
+
   // Load tasks from database on component mount
   useEffect(() => {
     loadTasks();
@@ -61,6 +73,66 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Modal helpers
+  const openCreateTaskModal = (columnId: string) => {
+    setModalColumn(columnId as 'todo' | 'inprogress' | 'done');
+    setModalTitle('');
+    setModalImageFile(null);
+    setIsModalOpen(true);
+  };
+
+  const closeCreateTaskModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleModalFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setModalImageFile(file);
+  };
+
+  const handleCreateTaskFromModal = async () => {
+    try {
+      if (!modalTitle.trim()) {
+        setError('Por favor, informe o nome da tarefa.');
+        return;
+      }
+
+      const order = await TaskService.getNextOrder(modalColumn, boardId);
+
+      const taskData: CreateTaskData = {
+        title: modalTitle.trim(),
+        status: modalColumn,
+        order,
+        boardId: boardId || undefined,
+      };
+
+      // TODO: integrate Appwrite Storage for image upload (optional)
+      const newTask = await TaskService.createTask(taskData);
+
+      setKanbanData(prevData => ({
+        ...prevData,
+        tasks: [...prevData.tasks, {
+          id: newTask.$id,
+          name: newTask.title,
+          column: newTask.status,
+          type: newTask.imageFileId ? 'image' : 'text',
+          content: newTask.description || undefined,
+          order: newTask.order,
+          imageFileId: newTask.imageFileId,
+          imageBucketId: newTask.imageBucketId,
+          boardId: newTask.boardId || undefined,
+          createdAt: newTask.$createdAt,
+          updatedAt: newTask.$updatedAt
+        }]
+      }));
+
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Error creating task from modal:', error);
+      setError('Falha ao criar tarefa. Tente novamente.');
     }
   };
 
@@ -258,7 +330,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
               <KanbanHeader className="flex items-center justify-between">
                 <span>{column.name}</span>
                 <button
-                  onClick={() => handleAddTask(column.id)}
+                  onClick={() => openCreateTaskModal(column.id)}
                   className="p-1 hover:bg-gray-200 rounded transition-colors"
                   title="Adicionar tarefa"
                 >
@@ -317,6 +389,44 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
         </KanbanProvider>
       </div>
       )}
+      {/* Create Task Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onRequestClose={closeCreateTaskModal}
+        contentLabel="Adicionar uma tarefa"
+        className="relative z-[1001] max-w-sm w-full bg-white rounded-lg shadow-lg p-4 mx-auto outline-none"
+        overlayClassName="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center"
+      >
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">Adicione uma tarefa</h2>
+          <input
+            type="text"
+            placeholder="Adicione o nome da task"
+            value={modalTitle}
+            onChange={(e) => setModalTitle(e.target.value)}
+            className="w-full border rounded px-3 py-2 text-sm"
+          />
+          <div className="grid grid-cols-3 gap-2">
+            {(['todo','inprogress','done'] as const).map((col) => (
+              <button
+                key={col}
+                onClick={() => setModalColumn(col)}
+                className={`${modalColumn === col ? 'bg-pink-400' : 'bg-pink-200'} rounded px-2 py-2 text-sm`}
+              >
+                {col === 'todo' ? 'To Do' : col === 'inprogress' ? 'In Progress' : 'Done'}
+              </button>
+            ))}
+          </div>
+          <div>
+            <label className="block mb-1 text-sm">Upload Imagem</label>
+            <input type="file" accept="image/*" onChange={handleModalFileChange} className="w-full" />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button onClick={closeCreateTaskModal} className="px-3 py-1 text-sm rounded border">Cancelar</button>
+            <button onClick={handleCreateTaskFromModal} className="px-3 py-1 text-sm rounded bg-blue-500 text-white">Criar</button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
