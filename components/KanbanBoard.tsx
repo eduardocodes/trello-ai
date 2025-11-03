@@ -55,6 +55,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editColumn, setEditColumn] = useState<'todo' | 'inprogress' | 'done'>('todo');
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editExistingImageId, setEditExistingImageId] = useState<string | null>(null);
+  const [editImageDeleted, setEditImageDeleted] = useState(false);
 
   // Track original column during drag to detect status changes reliably
   const dragStartColumnRef = useRef<string | null>(null);
@@ -216,6 +219,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
     setEditTitle(task.name);
     setEditDescription(task.content || '');
     setEditColumn(task.column as 'todo' | 'inprogress' | 'done');
+    setEditExistingImageId(task.imageFileId || null);
+    setEditImageFile(null);
+    setEditImageDeleted(false);
     setIsEditModalOpen(true);
   };
 
@@ -224,6 +230,22 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
     setEditTaskId(null);
     setEditTitle('');
     setEditDescription('');
+    setEditExistingImageId(null);
+    setEditImageFile(null);
+    setEditImageDeleted(false);
+  };
+
+  const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditImageFile(file);
+      setEditImageDeleted(false); // Reset deleted state when new file is selected
+    }
+  };
+
+  const handleDeleteEditImage = () => {
+    setEditImageDeleted(true);
+    setEditImageFile(null);
   };
 
   const handleUpdateTaskFromModal = async () => {
@@ -241,6 +263,39 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
         title: editTitle.trim(),
         description: editDescription.trim() ? editDescription.trim() : undefined,
       };
+
+      // Handle image changes
+      let newImageFileId: string | undefined = originalTask.imageFileId;
+
+      // If image was deleted or replaced with new file
+      if (editImageDeleted || editImageFile) {
+        // Delete old image if it exists
+        if (originalTask.imageFileId) {
+          try {
+            await TaskService.deleteImage(originalTask.imageFileId);
+          } catch (error) {
+            console.warn('Failed to delete old image file:', error);
+          }
+        }
+        newImageFileId = undefined;
+      }
+
+      // If new image file is selected, upload it
+      if (editImageFile) {
+        try {
+          const uploadedFile = await TaskService.uploadImage(editImageFile);
+          newImageFileId = uploadedFile.fileId;
+        } catch (error) {
+          console.error('Failed to upload new image:', error);
+          setError('Failed to upload image. Please try again.');
+          return;
+        }
+      }
+
+      // Add image file ID to updates if it changed
+      if (newImageFileId !== originalTask.imageFileId) {
+        updates.imageFileId = newImageFileId;
+      }
 
       // If status changed, compute next order for target column
       if (originalTask.column !== editColumn) {
@@ -262,6 +317,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                 content: updated.description || undefined,
                 column: updated.status,
                 order: updates.order ?? task.order,
+                imageFileId: newImageFileId,
                 updatedAt: updated.$updatedAt
               }
             : task
@@ -630,15 +686,100 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
             className="w-full border rounded px-3 py-2 text-sm min-h-[80px]"
           />
           <div className="grid grid-cols-3 gap-2">
-            {(['todo','inprogress','done'] as const).map((col) => (
-              <button
-                key={col}
-                onClick={() => setEditColumn(col)}
-                className={`${editColumn === col ? 'bg-pink-400' : 'bg-pink-200'} rounded px-2 py-2 text-sm cursor-pointer`}
+            {(['todo','inprogress','done'] as const).map((col) => {
+              const getColumnColors = (column: string, isSelected: boolean) => {
+                switch (column) {
+                  case 'todo':
+                    return isSelected ? 'bg-red-400' : 'bg-red-200';
+                  case 'inprogress':
+                    return isSelected ? 'bg-blue-400' : 'bg-blue-200';
+                  case 'done':
+                    return isSelected ? 'bg-green-400' : 'bg-green-200';
+                  default:
+                    return isSelected ? 'bg-gray-400' : 'bg-gray-200';
+                }
+              };
+              
+              return (
+                <button
+                  key={col}
+                  onClick={() => setEditColumn(col)}
+                  className={`${getColumnColors(col, editColumn === col)} rounded px-2 py-2 text-sm cursor-pointer`}
+                >
+                  {col === 'todo' ? 'To Do' : col === 'inprogress' ? 'In Progress' : 'Done'}
+                </button>
+              );
+            })}
+          </div>
+          <div>
+            {/* Show existing image if present and not deleted */}
+            {editExistingImageId && !editImageDeleted && !editImageFile && (
+              <div className="mb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Current Image:</span>
+                  <button
+                    onClick={handleDeleteEditImage}
+                    className="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors"
+                  >
+                    Delete Image
+                  </button>
+                </div>
+                <img 
+                  src={TaskService.getImageUrl(editExistingImageId)} 
+                  alt="Current task image" 
+                  className="w-full max-w-[200px] h-auto rounded border"
+                />
+              </div>
+            )}
+            
+            {/* Show new image preview if selected */}
+            {editImageFile && (
+              <div className="mb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">New Image:</span>
+                  <button
+                    onClick={() => setEditImageFile(null)}
+                    className="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <img 
+                  src={URL.createObjectURL(editImageFile)} 
+                  alt="New image preview" 
+                  className="w-full max-w-[200px] h-auto rounded border"
+                />
+                <p className="text-xs text-gray-500 mt-1">{editImageFile.name}</p>
+              </div>
+            )}
+            
+            {/* Upload button - show when no image or image was deleted */}
+            {(!editExistingImageId || editImageDeleted) && !editImageFile && (
+              <button 
+                onClick={() => document.getElementById('edit-file-input')?.click()}
+                className="block mb-2 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded px-3 py-2 cursor-pointer transition-colors"
               >
-                {col === 'todo' ? 'To Do' : col === 'inprogress' ? 'In Progress' : 'Done'}
+                Upload Image
               </button>
-            ))}
+            )}
+            
+            {/* Replace button - show when existing image is present and not deleted */}
+            {editExistingImageId && !editImageDeleted && !editImageFile && (
+              <button 
+                onClick={() => document.getElementById('edit-file-input')?.click()}
+                className="block mb-2 text-sm bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded px-3 py-2 cursor-pointer transition-colors"
+              >
+                Replace Image
+              </button>
+            )}
+            
+            <input 
+              id="edit-file-input"
+              type="file" 
+              accept="image/*" 
+              onChange={handleEditFileChange} 
+              className="hidden" 
+            />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button onClick={closeEditTaskModal} className="px-3 py-1 text-sm rounded border cursor-pointer">Cancel</button>
