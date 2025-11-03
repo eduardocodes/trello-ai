@@ -10,8 +10,7 @@ export default function LoginPage() {
   const { signIn, user, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    rememberMe: false
+    password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -161,23 +160,6 @@ export default function LoginPage() {
               {errors.password && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password}</p>
               )}
-            </div>
-
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="rememberMe"
-                  checked={formData.rememberMe}
-                  onChange={handleInputChange}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                />
-                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Remember me</span>
-              </label>
-              <a href="#" className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 cursor-pointer">
-                Forgot password?
-              </a>
             </div>
 
             {/* Submit Button */}
