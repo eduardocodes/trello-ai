@@ -46,6 +46,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   const [modalTitle, setModalTitle] = useState('');
   const [modalColumn, setModalColumn] = useState<'todo' | 'inprogress' | 'done'>('todo');
   const [modalImageFile, setModalImageFile] = useState<File | null>(null);
+  const [modalDescription, setModalDescription] = useState('');
 
   useEffect(() => {
     // Bind react-modal to the app element for accessibility
@@ -81,10 +82,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
     setModalColumn(columnId as 'todo' | 'inprogress' | 'done');
     setModalTitle('');
     setModalImageFile(null);
+    setModalDescription('');
     setIsModalOpen(true);
   };
 
   const closeCreateTaskModal = () => {
+    setModalDescription('');
     setIsModalOpen(false);
   };
 
@@ -104,6 +107,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
 
       const taskData: CreateTaskData = {
         title: modalTitle.trim(),
+        description: modalDescription.trim() ? modalDescription.trim() : undefined,
         status: modalColumn,
         order,
         boardId: boardId || undefined,
@@ -405,6 +409,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
             value={modalTitle}
             onChange={(e) => setModalTitle(e.target.value)}
             className="w-full border rounded px-3 py-2 text-sm"
+          />
+          <textarea
+            placeholder="Descrição da tarefa (opcional)"
+            value={modalDescription}
+            onChange={(e) => setModalDescription(e.target.value)}
+            className="w-full border rounded px-3 py-2 text-sm min-h-[80px]"
           />
           <div className="grid grid-cols-3 gap-2">
             {(['todo','inprogress','done'] as const).map((col) => (
