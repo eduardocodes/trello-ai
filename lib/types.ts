@@ -8,7 +8,6 @@ export interface AppwriteTask {
   status: 'todo' | 'inprogress' | 'done';
   order: number;
   imageFileId?: string;
-  imageBucketId?: string;
   boardId?: string | null;
   userId?: string | null;
   $createdAt: string;
@@ -22,7 +21,6 @@ export interface CreateTaskData {
   status: 'todo' | 'inprogress' | 'done';
   order: number;
   imageFileId?: string;
-  imageBucketId?: string;
   boardId?: string;
   userId?: string;
 }
@@ -54,7 +52,6 @@ export interface KanbanTask extends Record<string, unknown> {
   content?: string;
   order?: number;
   imageFileId?: string;
-  imageBucketId?: string;
   boardId?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -106,7 +103,6 @@ export const convertAppwriteTasksToKanban = (tasks: AppwriteTask[]): KanbanBoard
     content: task.description || undefined,
     order: task.order,
     imageFileId: task.imageFileId,
-    imageBucketId: task.imageBucketId,
     boardId: task.boardId || undefined,
     createdAt: task.$createdAt,
     updatedAt: task.$updatedAt
@@ -123,7 +119,6 @@ export const convertKanbanTaskToAppwrite = (task: KanbanTask): Partial<CreateTas
     status: task.column as 'todo' | 'inprogress' | 'done',
     order: task.order || 0,
     imageFileId: task.imageFileId,
-    imageBucketId: task.imageBucketId,
     boardId: task.boardId
   };
 };

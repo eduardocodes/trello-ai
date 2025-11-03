@@ -47,6 +47,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   const [modalColumn, setModalColumn] = useState<'todo' | 'inprogress' | 'done'>('todo');
   const [modalImageFile, setModalImageFile] = useState<File | null>(null);
   const [modalDescription, setModalDescription] = useState('');
+  const [modalLoading, setModalLoading] = useState(false);
 
   // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -97,7 +98,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   };
 
   const closeCreateTaskModal = () => {
+    setModalTitle('');
     setModalDescription('');
+    setModalImageFile(null);
+    setModalLoading(false);
+    setError(null);
     setIsModalOpen(false);
   };
 
@@ -113,7 +118,24 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
         return;
       }
 
+      setModalLoading(true);
+      setError(null); // Clear any previous errors
       const order = await TaskService.getNextOrder(modalColumn, boardId);
+
+      let imageFileId: string | undefined;
+
+      // Upload image if one is selected
+      if (modalImageFile) {
+        try {
+          const uploadResult = await TaskService.uploadImage(modalImageFile);
+          imageFileId = uploadResult.fileId;
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          setError('Failed to upload image. Please try again.');
+          setModalLoading(false);
+          return;
+        }
+      }
 
       const taskData: CreateTaskData = {
         title: modalTitle.trim(),
@@ -121,9 +143,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
         status: modalColumn,
         order,
         boardId: boardId || undefined,
+        imageFileId,
       };
 
-      // TODO: integrate Appwrite Storage for image upload (optional)
       const newTask = await TaskService.createTask(taskData);
 
       setKanbanData(prevData => ({
@@ -136,17 +158,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
           content: newTask.description || undefined,
           order: newTask.order,
           imageFileId: newTask.imageFileId,
-          imageBucketId: newTask.imageBucketId,
           boardId: newTask.boardId || undefined,
           createdAt: newTask.$createdAt,
           updatedAt: newTask.$updatedAt
         }]
       }));
 
-      setIsModalOpen(false);
+      closeCreateTaskModal(); // This will reset loading state and close modal
     } catch (error) {
       console.error('Error creating task from modal:', error);
       setError('Failed to create task. Please try again.');
+      setModalLoading(false);
     }
   };
 
@@ -175,7 +197,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
           content: newTask.description || undefined,
           order: newTask.order,
           imageFileId: newTask.imageFileId,
-          imageBucketId: newTask.imageBucketId,
           boardId: newTask.boardId || undefined,
           createdAt: newTask.$createdAt,
           updatedAt: newTask.$updatedAt
@@ -428,7 +449,20 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                           </>
                         ) : (
                           <>
-                            <div className="bg-green-200 rounded-md p-4 text-center text-sm text-gray-700">
+                            <p className="m-0 font-medium text-sm mb-2">{task.name}</p>
+                            {task.imageFileId ? (
+                              <img 
+                                src={TaskService.getImageUrl(task.imageFileId)} 
+                                alt={task.name}
+                                className="w-full h-32 object-cover rounded-md mb-2"
+                                onError={(e) => {
+                                  // Fallback to placeholder if image fails to load
+                                  e.currentTarget.style.display = 'none';
+                                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className="bg-green-200 rounded-md p-4 text-center text-sm text-gray-700 hidden">
                               Image
                             </div>
                             {task.content ? (
@@ -515,10 +549,33 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
           <div>
             <label className="block mb-1 text-sm">Upload Image</label>
             <input type="file" accept="image/*" onChange={handleModalFileChange} className="w-full" />
+            {modalImageFile && (
+              <div className="mt-2">
+                <img 
+                  src={URL.createObjectURL(modalImageFile)} 
+                  alt="Preview" 
+                  className="w-full max-w-[200px] h-auto rounded border"
+                />
+                <p className="text-xs text-gray-500 mt-1">{modalImageFile.name}</p>
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button onClick={closeCreateTaskModal} className="px-3 py-1 text-sm rounded border">Cancel</button>
-            <button onClick={handleCreateTaskFromModal} className="px-3 py-1 text-sm rounded bg-blue-500 text-white">Create</button>
+            <button 
+              onClick={closeCreateTaskModal} 
+              disabled={modalLoading}
+              className="px-3 py-1 text-sm rounded border disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleCreateTaskFromModal} 
+              disabled={modalLoading}
+              className="px-3 py-1 text-sm rounded bg-blue-500 text-white disabled:opacity-50 flex items-center gap-2"
+            >
+              {modalLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {modalLoading ? 'Creating...' : 'Create'}
+            </button>
           </div>
         </div>
       </Modal>

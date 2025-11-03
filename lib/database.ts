@@ -1,4 +1,4 @@
-import { databases, DATABASE_ID, TASKS_COLLECTION_ID, ID, Query, account, Permission, Role } from './appwrite';
+import { databases, storage, DATABASE_ID, TASKS_COLLECTION_ID, STORAGE_BUCKET_ID, ID, Query, account, Permission, Role } from './appwrite';
 import { AppwriteTask, CreateTaskData } from './types';
 
 /**
@@ -161,5 +161,58 @@ export class TaskService {
       console.error('Error reordering task:', error);
       throw new Error('Failed to reorder task');
     }
+  }
+
+  /**
+   * Upload an image to Appwrite Storage
+   * @param file The image file to upload
+   * @returns Promise<{fileId: string}> The file ID for the uploaded file
+   */
+  static async uploadImage(file: File): Promise<{fileId: string}> {
+    try {
+      const user = await account.get();
+      const fileId = ID.unique();
+      
+      // Upload file to storage
+      const response = await storage.createFile(
+        STORAGE_BUCKET_ID,
+        fileId,
+        file,
+        [
+          Permission.read(Role.user(user.$id)),
+          Permission.delete(Role.user(user.$id)),
+        ]
+      );
+
+      return {
+        fileId: response.$id
+      };
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw new Error('Failed to upload image');
+    }
+  }
+
+  /**
+   * Delete an image file from Appwrite Storage
+   * @param fileId The file ID to delete
+   * @returns Promise<void>
+   */
+  static async deleteImage(fileId: string): Promise<void> {
+    try {
+      await storage.deleteFile(STORAGE_BUCKET_ID, fileId);
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      throw new Error('Failed to delete image');
+    }
+  }
+
+  /**
+   * Get image URL for preview
+   * @param fileId The file ID
+   * @returns string The image URL
+   */
+  static getImageUrl(fileId: string): string {
+    return storage.getFilePreview(STORAGE_BUCKET_ID, fileId);
   }
 }
