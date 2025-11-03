@@ -348,11 +348,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         {task.type === 'text' ? (
-                          <p className="m-0 font-medium text-sm">{task.name}</p>
+                          <>
+                            <p className="m-0 font-medium text-sm">{task.name}</p>
+                            {task.content ? (
+                              <p className="mt-1 text-xs text-gray-600 truncate">{task.content}</p>
+                            ) : null}
+                          </>
                         ) : (
-                          <div className="bg-green-200 rounded-md p-4 text-center text-sm text-gray-700">
-                            Imagem
-                          </div>
+                          <>
+                            <div className="bg-green-200 rounded-md p-4 text-center text-sm text-gray-700">
+                              Imagem
+                            </div>
+                            {task.content ? (
+                              <p className="mt-1 text-xs text-gray-600 truncate">{task.content}</p>
+                            ) : null}
+                          </>
                         )}
                       </div>
                       
