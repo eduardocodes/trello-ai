@@ -719,7 +719,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                   <span className="text-sm text-gray-600">Current Image:</span>
                   <button
                     onClick={handleDeleteEditImage}
-                    className="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors"
+                    className="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors cursor-pointer"
                   >
                     Delete Image
                   </button>
@@ -739,7 +739,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                   <span className="text-sm text-gray-600">New Image:</span>
                   <button
                     onClick={() => setEditImageFile(null)}
-                    className="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors"
+                    className="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors cursor-pointer"
                   >
                     Remove
                   </button>
