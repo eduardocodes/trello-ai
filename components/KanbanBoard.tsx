@@ -1,13 +1,29 @@
+'use client';
+
 import React, { useState } from 'react';
-import { BoardData, Task, Column as ColumnType } from '../lib/types';
-import Column from './Column';
+import { Plus, Edit2, Trash2 } from 'lucide-react';
+import {
+  KanbanProvider,
+  KanbanBoard as ShadcnKanbanBoard,
+  KanbanHeader,
+  KanbanCards,
+  KanbanCard,
+  type DragEndEvent,
+} from '@/components/ui/shadcn-io/kanban';
+import { 
+  KanbanBoardData, 
+  KanbanTask, 
+  KanbanColumn, 
+  convertToKanbanFormat,
+  BoardData 
+} from '../lib/types';
 
 interface KanbanBoardProps {
   initialData?: BoardData;
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData }) => {
-  // Default mock data matching the image
+  // Default mock data matching the original structure
   const defaultData: BoardData = {
     columns: [
       {
@@ -39,7 +55,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData }) => {
     ]
   };
 
-  const [boardData, setBoardData] = useState<BoardData>(initialData || defaultData);
+  // Convert to Kanban format and manage state
+  const [kanbanData, setKanbanData] = useState<KanbanBoardData>(() => 
+    convertToKanbanFormat(initialData || defaultData)
+  );
 
   // Generate unique ID for new tasks
   const generateTaskId = () => {
@@ -47,54 +66,56 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData }) => {
   };
 
   // Add new task to a column
-  const handleAddTask = (columnId: string, newTask: Omit<Task, 'id'>) => {
-    const taskWithId: Task = {
-      ...newTask,
-      id: generateTaskId()
+  const handleAddTask = (columnId: string, taskName: string = 'Nova tarefa') => {
+    const newTask: KanbanTask = {
+      id: generateTaskId(),
+      name: taskName,
+      column: columnId,
+      type: 'text'
     };
 
-    setBoardData(prevData => ({
+    setKanbanData(prevData => ({
       ...prevData,
-      columns: prevData.columns.map(column =>
-        column.id === columnId
-          ? { ...column, tasks: [...column.tasks, taskWithId] }
-          : column
-      )
+      tasks: [...prevData.tasks, newTask]
     }));
   };
 
   // Edit existing task
-  const handleEditTask = (updatedTask: Task) => {
-    setBoardData(prevData => ({
+  const handleEditTask = (taskId: string, newName: string) => {
+    setKanbanData(prevData => ({
       ...prevData,
-      columns: prevData.columns.map(column => ({
-        ...column,
-        tasks: column.tasks.map(task =>
-          task.id === updatedTask.id ? updatedTask : task
-        )
-      }))
+      tasks: prevData.tasks.map(task =>
+        task.id === taskId ? { ...task, name: newName } : task
+      )
     }));
   };
 
   // Delete task
   const handleDeleteTask = (taskId: string) => {
-    setBoardData(prevData => ({
+    setKanbanData(prevData => ({
       ...prevData,
-      columns: prevData.columns.map(column => ({
-        ...column,
-        tasks: column.tasks.filter(task => task.id !== taskId)
-      }))
+      tasks: prevData.tasks.filter(task => task.id !== taskId)
     }));
   };
 
-  // Calculate total tasks for the summary message
-  const getTotalTasks = () => {
-    return boardData.columns.reduce((total, column) => total + column.tasks.length, 0);
+  // Handle drag end event
+  const handleDragEnd = (event: DragEndEvent) => {
+    // The shadcn Kanban component handles the data updates automatically
+    // through the onDataChange callback
   };
 
+  // Handle data changes from drag and drop
+  const handleDataChange = (newTasks: KanbanTask[]) => {
+    setKanbanData(prevData => ({
+      ...prevData,
+      tasks: newTasks
+    }));
+  };
+
+  // Calculate task counts for summary
   const getTaskCounts = () => {
-    const counts = boardData.columns.reduce((acc, column) => {
-      acc[column.id] = column.tasks.length;
+    const counts = kanbanData.tasks.reduce((acc, task) => {
+      acc[task.column] = (acc[task.column] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
     
@@ -121,17 +142,77 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData }) => {
         </div>
       </div>
 
-      {/* Kanban Columns */}
-      <div className="flex space-x-6 overflow-x-auto pb-4">
-        {boardData.columns.map((column) => (
-          <Column
-            key={column.id}
-            column={column}
-            onAddTask={handleAddTask}
-            onEditTask={handleEditTask}
-            onDeleteTask={handleDeleteTask}
-          />
-        ))}
+      {/* Kanban Board */}
+      <div className="flex-1 min-h-0">
+        <KanbanProvider
+          columns={kanbanData.columns}
+          data={kanbanData.tasks}
+          onDataChange={handleDataChange}
+          onDragEnd={handleDragEnd}
+          className="h-full"
+        >
+          {(column: KanbanColumn) => (
+            <ShadcnKanbanBoard key={column.id} id={column.id} className="h-full">
+              <KanbanHeader className="flex items-center justify-between">
+                <span>{column.name}</span>
+                <button
+                  onClick={() => handleAddTask(column.id)}
+                  className="p-1 hover:bg-gray-200 rounded transition-colors"
+                  title="Adicionar tarefa"
+                >
+                  <Plus size={16} />
+                </button>
+              </KanbanHeader>
+              
+              <KanbanCards id={column.id} className="flex-1 min-h-0">
+                {(task: KanbanTask) => (
+                  <KanbanCard key={task.id} {...task} className="group relative">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        {task.type === 'text' ? (
+                          <p className="m-0 font-medium text-sm">{task.name}</p>
+                        ) : (
+                          <div className="bg-green-200 rounded-md p-4 text-center text-sm text-gray-700">
+                            Imagem
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Edit/Delete buttons */}
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 ml-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newName = prompt('Editar tarefa:', task.name);
+                            if (newName && newName.trim()) {
+                              handleEditTask(task.id, newName.trim());
+                            }
+                          }}
+                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                          title="Editar tarefa"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+                              handleDeleteTask(task.id);
+                            }
+                          }}
+                          className="p-1 hover:bg-red-200 rounded transition-colors text-red-600"
+                          title="Excluir tarefa"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  </KanbanCard>
+                )}
+              </KanbanCards>
+            </ShadcnKanbanBoard>
+          )}
+        </KanbanProvider>
       </div>
     </div>
   );
