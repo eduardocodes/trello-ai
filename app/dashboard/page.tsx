@@ -93,14 +93,6 @@ const DashboardPage: React.FC = () => {
           <KanbanBoard />
         </div>
       </main>
-
-      {/* Floating elements for visual interest */}
-      <div className="absolute bottom-10 right-10 opacity-30">
-        <div className="w-4 h-4 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-ping"></div>
-      </div>
-      <div className="absolute top-20 left-10 opacity-20">
-        <div className="w-6 h-6 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
-      </div>
     </div>
   );
 };
