@@ -12,9 +12,7 @@ export default function SignUpPage() {
     name: '',
     email: '',
     password: '',
-    confirmPassword: '',
-    agreeToTerms: false,
-    subscribeNewsletter: false
+    confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -58,11 +56,6 @@ export default function SignUpPage() {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
-    }
-    
-    // Terms validation
-    if (!formData.agreeToTerms) {
-      newErrors.agreeToTerms = 'You must agree to the Terms of Service';
     }
     
     setErrors(newErrors);
@@ -245,53 +238,6 @@ export default function SignUpPage() {
               {errors.confirmPassword && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.confirmPassword}</p>
               )}
-            </div>
-
-            {/* Terms and Newsletter Checkboxes */}
-            <div className="space-y-4">
-              <div>
-                <label className="flex items-start">
-                  <input
-                    type="checkbox"
-                    name="agreeToTerms"
-                    checked={formData.agreeToTerms}
-                    onChange={handleInputChange}
-                    className={`w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 ${
-                      errors.agreeToTerms ? 'border-red-500' : ''
-                    }`}
-                    disabled={isLoading}
-                  />
-                  <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
-                    I agree to the{' '}
-                    <a href="#" className="text-blue-600 hover:text-blue-500 dark:text-blue-400">
-                      Terms of Service
-                    </a>{' '}
-                    and{' '}
-                    <a href="#" className="text-blue-600 hover:text-blue-500 dark:text-blue-400">
-                      Privacy Policy
-                    </a>
-                  </span>
-                </label>
-                {errors.agreeToTerms && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.agreeToTerms}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="flex items-start">
-                  <input
-                    type="checkbox"
-                    name="subscribeNewsletter"
-                    checked={formData.subscribeNewsletter}
-                    onChange={handleInputChange}
-                    className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                    disabled={isLoading}
-                  />
-                  <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
-                    Subscribe to our newsletter for updates and tips
-                  </span>
-                </label>
-              </div>
             </div>
 
             {/* Submit Button */}
