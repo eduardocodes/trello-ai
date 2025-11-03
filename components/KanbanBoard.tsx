@@ -360,7 +360,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   return (
     <div className="flex flex-col h-full">
       {/* Summary Message */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-center mb-6">
         <div className="bg-gray-100 rounded-lg px-6 py-3 text-center">
           <p className="text-gray-700 text-sm">
             Hello! Today there are {taskCounts.todo} tasks in To Do, {taskCounts.inProgress} In Progress, and {taskCounts.done} in Done.
@@ -369,14 +369,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
             Have a productive day.
           </p>
         </div>
-        <button
-          onClick={loadTasks}
-          disabled={loading}
-          className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          Refresh
-        </button>
       </div>
 
       {/* Error display */}
