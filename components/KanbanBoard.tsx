@@ -41,6 +41,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // AI Summary state
+  const [aiSummary, setAiSummary] = useState<string>('');
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
+  const [lastSummaryTime, setLastSummaryTime] = useState<number>(0);
+
   // Modal state for creating a task
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
@@ -90,6 +96,66 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
       setLoading(false);
     }
   };
+
+  // Generate AI summary
+  const generateAISummary = async (taskCounts: { todo: number; inProgress: number; done: number }) => {
+    // Cache for 5 minutes to reduce API calls
+    const now = Date.now();
+    const cacheTime = 5 * 60 * 1000; // 5 minutes
+    
+    if (now - lastSummaryTime < cacheTime && aiSummary) {
+      return; // Use cached summary
+    }
+
+    try {
+      setAiSummaryLoading(true);
+      setAiSummaryError(null);
+
+      const response = await fetch('/api/generate-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ taskCounts }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate summary');
+      }
+
+      setAiSummary(data.summary);
+      setLastSummaryTime(now);
+      
+      if (data.fallback) {
+        setAiSummaryError('Using fallback message');
+      }
+    } catch (err) {
+      console.error('Error generating AI summary:', err);
+      setAiSummaryError('Failed to generate AI summary');
+      // Set fallback message
+      setAiSummary('Keep up the great work on your tasks!');
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  };
+
+  // Generate AI summary when task counts change
+  useEffect(() => {
+    const taskCounts = {
+      todo: kanbanData.tasks.filter(task => task.columnId === 'todo').length,
+      inProgress: kanbanData.tasks.filter(task => task.columnId === 'inprogress').length,
+      done: kanbanData.tasks.filter(task => task.columnId === 'done').length,
+    };
+
+    // Debounce the API call
+    const timeoutId = setTimeout(() => {
+      generateAISummary(taskCounts);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [kanbanData.tasks, lastSummaryTime, aiSummary]);
 
   // Modal helpers
   const openCreateTaskModal = (columnId: string) => {
@@ -438,13 +504,33 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
     <div className="flex flex-col h-full">
       {/* Summary Message */}
       <div className="flex justify-center mb-6">
-        <div className="bg-gray-100 rounded-lg px-6 py-3 text-center">
-          <p className="text-gray-700 text-sm">
-            Hello! Today there are {taskCounts.todo} tasks in To Do, {taskCounts.inProgress} In Progress, and {taskCounts.done} in Done.
-          </p>
-          <p className="text-gray-600 text-xs mt-1">
-            Have a productive day.
-          </p>
+        <div className="bg-gray-100 rounded-lg px-6 py-3 text-center min-h-[60px] flex items-center justify-center">
+          {aiSummaryLoading ? (
+            <div className="flex items-center space-x-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <p className="text-gray-600 text-sm">Generating personalized summary with AI....</p>
+            </div>
+          ) : aiSummary ? (
+            <div>
+              <p className="text-gray-700 text-sm font-medium">
+                {aiSummary}
+              </p>
+              {aiSummaryError && (
+                <p className="text-gray-500 text-xs mt-1">
+                  {taskCounts.todo} to do • {taskCounts.inProgress} in progress • {taskCounts.done} done
+                </p>
+              )}
+            </div>
+          ) : (
+            <div>
+              <p className="text-gray-700 text-sm">
+                Hello! Today there are {taskCounts.todo} tasks in To Do, {taskCounts.inProgress} In Progress, and {taskCounts.done} in Done.
+              </p>
+              <p className="text-gray-600 text-xs mt-1">
+                Have a productive day.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
