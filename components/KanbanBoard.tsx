@@ -428,7 +428,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                 <span>{column.name}</span>
                 <button
                   onClick={() => openCreateTaskModal(column.id)}
-                  className="p-1 hover:bg-gray-200 rounded transition-colors"
+                  className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer"
                   title="Add task"
                 >
                   <Plus size={16} />
@@ -482,7 +482,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                             e.stopPropagation();
                             openEditTaskModal(task.id);
                           }}
-                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                          className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer"
                           title="Edit task"
                         >
                           <Edit2 size={12} />
@@ -497,7 +497,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                               handleDeleteTask(task.id);
                             }
                           }}
-                          className="p-1 hover:bg-red-200 rounded transition-colors text-red-600"
+                          className="p-1 hover:bg-red-200 rounded transition-colors text-red-600 cursor-pointer"
                           title="Delete task"
                         >
                           <Trash2 size={12} />
@@ -540,7 +540,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
               <button
                 key={col}
                 onClick={() => setModalColumn(col)}
-                className={`${modalColumn === col ? 'bg-pink-400' : 'bg-pink-200'} rounded px-2 py-2 text-sm`}
+                className={`${modalColumn === col ? 'bg-pink-400' : 'bg-pink-200'} rounded px-2 py-2 text-sm cursor-pointer`}
               >
                 {col === 'todo' ? 'To Do' : col === 'inprogress' ? 'In Progress' : 'Done'}
               </button>
@@ -564,14 +564,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
             <button 
               onClick={closeCreateTaskModal} 
               disabled={modalLoading}
-              className="px-3 py-1 text-sm rounded border disabled:opacity-50"
+              className="px-3 py-1 text-sm rounded border disabled:opacity-50 cursor-pointer"
             >
               Cancel
             </button>
             <button 
               onClick={handleCreateTaskFromModal} 
               disabled={modalLoading}
-              className="px-3 py-1 text-sm rounded bg-blue-500 text-white disabled:opacity-50 flex items-center gap-2"
+              className="px-3 py-1 text-sm rounded bg-blue-500 text-white disabled:opacity-50 flex items-center gap-2 cursor-pointer"
             >
               {modalLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {modalLoading ? 'Creating...' : 'Create'}
@@ -608,15 +608,15 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
               <button
                 key={col}
                 onClick={() => setEditColumn(col)}
-                className={`${editColumn === col ? 'bg-pink-400' : 'bg-pink-200'} rounded px-2 py-2 text-sm`}
+                className={`${editColumn === col ? 'bg-pink-400' : 'bg-pink-200'} rounded px-2 py-2 text-sm cursor-pointer`}
               >
                 {col === 'todo' ? 'To Do' : col === 'inprogress' ? 'In Progress' : 'Done'}
               </button>
             ))}
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button onClick={closeEditTaskModal} className="px-3 py-1 text-sm rounded border">Cancel</button>
-            <button onClick={handleUpdateTaskFromModal} className="px-3 py-1 text-sm rounded bg-blue-500 text-white">Save</button>
+            <button onClick={closeEditTaskModal} className="px-3 py-1 text-sm rounded border cursor-pointer">Cancel</button>
+            <button onClick={handleUpdateTaskFromModal} className="px-3 py-1 text-sm rounded bg-blue-500 text-white cursor-pointer">Save</button>
           </div>
         </div>
       </Modal>

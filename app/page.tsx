@@ -177,7 +177,7 @@ export default function LoginPage() {
                 />
                 <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Remember me</span>
               </label>
-              <a href="#" className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400">
+              <a href="#" className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 cursor-pointer">
                 Forgot password?
               </a>
             </div>
@@ -186,7 +186,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 cursor-pointer"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -206,7 +206,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Don't have an account?{' '}
-              <Link href="/signup" className="text-blue-600 hover:text-blue-500 dark:text-blue-400 font-medium">
+              <Link href="/signup" className="text-blue-600 hover:text-blue-500 dark:text-blue-400 font-medium cursor-pointer">
                 Sign up
               </Link>
             </p>
