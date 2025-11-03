@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit2, Trash2, Loader2 } from 'lucide-react';
 import Modal from 'react-modal';
 import {
@@ -54,6 +54,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editColumn, setEditColumn] = useState<'todo' | 'inprogress' | 'done'>('todo');
+
+  // Track original column during drag to detect status changes reliably
+  const dragStartColumnRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Bind react-modal to the app element for accessibility
@@ -267,6 +270,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
     }
   };
 
+  // Handle drag start to capture the original column
+  const handleDragStart = (event: any) => {
+    const activeId = event?.active?.id as string | undefined;
+    if (!activeId) {
+      dragStartColumnRef.current = null;
+      return;
+    }
+    const task = kanbanData.tasks.find(t => t.id === activeId);
+    dragStartColumnRef.current = task?.column || null;
+  };
+
   // Handle drag end event
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -280,30 +294,39 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
     const activeTask = kanbanData.tasks.find(task => task.id === activeId);
     if (!activeTask) return;
 
-    // Determine the new column
-    const newColumn = overId.startsWith('column-') 
-      ? overId.replace('column-', '') 
-      : kanbanData.tasks.find(task => task.id === overId)?.column || activeTask.column;
+    // Determine the new column:
+    // - If dropping over a column, over.id equals the column id
+    // - If dropping over a card, use that card's column
+    const columnFromOver = kanbanData.columns.find(col => col.id === overId)?.id;
+    const newColumn = columnFromOver 
+      || kanbanData.tasks.find(task => task.id === overId)?.column 
+      || activeTask.column;
 
-    // If dropping on the same position, do nothing
-    if (activeTask.column === newColumn && activeId === overId) return;
+    // Compare against the original column captured at drag start
+    const originalColumn = dragStartColumnRef.current ?? activeTask.column;
+    // If the column didn't change, skip persistence (local reordering handled by provider)
+    if (originalColumn === newColumn) {
+      dragStartColumnRef.current = null;
+      return;
+    }
 
     try {
-      // Get the next order for the new column
+      // Get the next order for the target column
       const newOrder = await TaskService.getNextOrder(newColumn as 'todo' | 'inprogress' | 'done', boardId);
-      
-      // Update task status and order in database
+
+      // Persist status change and new order
       await TaskService.reorderTask(activeId, newColumn as 'todo' | 'inprogress' | 'done', newOrder);
-      
-      // Update local state
+
+      // Update local state for the moved task
       setKanbanData(prevData => ({
         ...prevData,
         tasks: prevData.tasks.map(task =>
-          task.id === activeId 
+          task.id === activeId
             ? { ...task, column: newColumn, order: newOrder }
             : task
         )
       }));
+      dragStartColumnRef.current = null;
     } catch (error) {
       console.error('Error moving task:', error);
       setError('Failed to move task. Please try again.');
@@ -382,6 +405,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
           columns={kanbanData.columns}
           data={kanbanData.tasks}
           onDataChange={handleDataChange}
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           className="h-full"
         >
