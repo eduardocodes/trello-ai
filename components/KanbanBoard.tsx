@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, Loader2 } from 'lucide-react';
 import {
   KanbanProvider,
   KanbanBoard as ShadcnKanbanBoard,
@@ -15,93 +15,167 @@ import {
   KanbanTask, 
   KanbanColumn, 
   convertToKanbanFormat,
-  BoardData 
+  convertAppwriteTasksToKanban,
+  BoardData,
+  AppwriteTask,
+  CreateTaskData
 } from '../lib/types';
+import { TaskService } from '../lib/database';
 
 interface KanbanBoardProps {
   initialData?: BoardData;
+  boardId?: string;
 }
 
-const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData }) => {
-  // Default mock data matching the original structure
-  const defaultData: BoardData = {
+const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
+  // State management
+  const [kanbanData, setKanbanData] = useState<KanbanBoardData>({
     columns: [
-      {
-        id: 'todo',
-        title: 'To Do',
-        tasks: [
-          { id: '1', title: 'tarefa 01', type: 'text' },
-          { id: '2', title: 'tarefa 02', type: 'text' },
-          { id: '3', title: 'tarefa 03', type: 'text' },
-          { id: '4', title: 'Imagem', type: 'image' }
-        ]
-      },
-      {
-        id: 'inprogress',
-        title: 'In Progress',
-        tasks: [
-          { id: '5', title: 'tarefa 01', type: 'text' },
-          { id: '6', title: 'tarefa 02', type: 'text' },
-          { id: '7', title: 'Imagem', type: 'image' }
-        ]
-      },
-      {
-        id: 'done',
-        title: 'Done',
-        tasks: [
-          { id: '8', title: 'tarefa 01', type: 'text' }
-        ]
+      { id: 'todo', name: 'To Do' },
+      { id: 'inprogress', name: 'In Progress' },
+      { id: 'done', name: 'Done' }
+    ],
+    tasks: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load tasks from database on component mount
+  useEffect(() => {
+    loadTasks();
+  }, [boardId]);
+
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const tasks = await TaskService.getAllTasks(boardId);
+      const kanbanFormat = convertAppwriteTasksToKanban(tasks);
+      setKanbanData(kanbanFormat);
+    } catch (err) {
+      setError('Failed to load tasks. Please try again.');
+      console.error('Error loading tasks:', err);
+      // Fallback to default data if provided
+      if (initialData) {
+        setKanbanData(convertToKanbanFormat(initialData));
       }
-    ]
-  };
-
-  // Convert to Kanban format and manage state
-  const [kanbanData, setKanbanData] = useState<KanbanBoardData>(() => 
-    convertToKanbanFormat(initialData || defaultData)
-  );
-
-  // Generate unique ID for new tasks
-  const generateTaskId = () => {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Add new task to a column
-  const handleAddTask = (columnId: string, taskName: string = 'Nova tarefa') => {
-    const newTask: KanbanTask = {
-      id: generateTaskId(),
-      name: taskName,
-      column: columnId,
-      type: 'text'
-    };
+  const handleAddTask = async (columnId: string, taskName: string = 'Nova tarefa') => {
+    try {
+      const order = await TaskService.getNextOrder(columnId as 'todo' | 'inprogress' | 'done', boardId);
+      
+      const taskData: CreateTaskData = {
+        title: taskName,
+        status: columnId as 'todo' | 'inprogress' | 'done',
+        order,
+        boardId: boardId || undefined
+      };
 
-    setKanbanData(prevData => ({
-      ...prevData,
-      tasks: [...prevData.tasks, newTask]
-    }));
+      const newTask = await TaskService.createTask(taskData);
+      
+      // Update local state
+      setKanbanData(prevData => ({
+        ...prevData,
+        tasks: [...prevData.tasks, {
+          id: newTask.$id,
+          name: newTask.title,
+          column: newTask.status,
+          type: newTask.imageFileId ? 'image' : 'text',
+          content: newTask.description || undefined,
+          order: newTask.order,
+          imageFileId: newTask.imageFileId,
+          imageBucketId: newTask.imageBucketId,
+          boardId: newTask.boardId || undefined,
+          createdAt: newTask.$createdAt,
+          updatedAt: newTask.$updatedAt
+        }]
+      }));
+    } catch (error) {
+      console.error('Error adding task:', error);
+      setError('Failed to add task. Please try again.');
+    }
   };
 
   // Edit existing task
-  const handleEditTask = (taskId: string, newName: string) => {
-    setKanbanData(prevData => ({
-      ...prevData,
-      tasks: prevData.tasks.map(task =>
-        task.id === taskId ? { ...task, name: newName } : task
-      )
-    }));
+  const handleEditTask = async (taskId: string, newName: string) => {
+    try {
+      await TaskService.updateTask(taskId, { title: newName });
+      
+      // Update local state
+      setKanbanData(prevData => ({
+        ...prevData,
+        tasks: prevData.tasks.map(task =>
+          task.id === taskId ? { ...task, name: newName } : task
+        )
+      }));
+    } catch (error) {
+      console.error('Error editing task:', error);
+      setError('Failed to edit task. Please try again.');
+    }
   };
 
   // Delete task
-  const handleDeleteTask = (taskId: string) => {
-    setKanbanData(prevData => ({
-      ...prevData,
-      tasks: prevData.tasks.filter(task => task.id !== taskId)
-    }));
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await TaskService.deleteTask(taskId);
+      
+      // Update local state
+      setKanbanData(prevData => ({
+        ...prevData,
+        tasks: prevData.tasks.filter(task => task.id !== taskId)
+      }));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      setError('Failed to delete task. Please try again.');
+    }
   };
 
   // Handle drag end event
-  const handleDragEnd = (event: DragEndEvent) => {
-    // The shadcn Kanban component handles the data updates automatically
-    // through the onDataChange callback
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // Find the active task
+    const activeTask = kanbanData.tasks.find(task => task.id === activeId);
+    if (!activeTask) return;
+
+    // Determine the new column
+    const newColumn = overId.startsWith('column-') 
+      ? overId.replace('column-', '') 
+      : kanbanData.tasks.find(task => task.id === overId)?.column || activeTask.column;
+
+    // If dropping on the same position, do nothing
+    if (activeTask.column === newColumn && activeId === overId) return;
+
+    try {
+      // Get the next order for the new column
+      const newOrder = await TaskService.getNextOrder(newColumn as 'todo' | 'inprogress' | 'done', boardId);
+      
+      // Update task status and order in database
+      await TaskService.reorderTask(activeId, newColumn as 'todo' | 'inprogress' | 'done', newOrder);
+      
+      // Update local state
+      setKanbanData(prevData => ({
+        ...prevData,
+        tasks: prevData.tasks.map(task =>
+          task.id === activeId 
+            ? { ...task, column: newColumn, order: newOrder }
+            : task
+        )
+      }));
+    } catch (error) {
+      console.error('Error moving task:', error);
+      setError('Failed to move task. Please try again.');
+    }
   };
 
   // Handle data changes from drag and drop
@@ -131,7 +205,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData }) => {
   return (
     <div className="flex flex-col h-full">
       {/* Summary Message */}
-      <div className="flex justify-center mb-6">
+      <div className="flex justify-between items-center mb-6">
         <div className="bg-gray-100 rounded-lg px-6 py-3 text-center">
           <p className="text-gray-700 text-sm">
             Olá, Hoje temos {taskCounts.todo} tarefas em To DO, {taskCounts.inProgress} In Progress e {taskCounts.done} em Done
@@ -140,10 +214,38 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData }) => {
             Tenha um dia produtivo
           </p>
         </div>
+        <button
+          onClick={loadTasks}
+          disabled={loading}
+          className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          Refresh
+        </button>
       </div>
 
-      {/* Kanban Board */}
-      <div className="flex-1 min-h-0">
+      {/* Error display */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+          <button
+            onClick={() => setError(null)}
+            className="ml-2 text-red-500 hover:text-red-700"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loading && kanbanData.tasks.length === 0 ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin" />
+          <span className="ml-2">Loading tasks...</span>
+        </div>
+      ) : (
+        /* Kanban Board */
+        <div className="flex-1 min-h-0">
         <KanbanProvider
           columns={kanbanData.columns}
           data={kanbanData.tasks}
@@ -214,6 +316,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData }) => {
           )}
         </KanbanProvider>
       </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,30 @@
 // TypeScript interfaces for the Trello dashboard
 
+// Appwrite Task interface matching the database schema
+export interface AppwriteTask {
+  $id: string;
+  title: string;
+  description?: string | null;
+  status: 'todo' | 'inprogress' | 'done';
+  order: number;
+  imageFileId?: string;
+  imageBucketId?: string;
+  boardId?: string | null;
+  $createdAt: string;
+  $updatedAt: string;
+}
+
+// Interface for creating new tasks (without auto-generated fields)
+export interface CreateTaskData {
+  title: string;
+  description?: string;
+  status: 'todo' | 'inprogress' | 'done';
+  order: number;
+  imageFileId?: string;
+  imageBucketId?: string;
+  boardId?: string;
+}
+
 // Legacy interfaces for backward compatibility
 export interface Task {
   id: string;
@@ -25,6 +50,12 @@ export interface KanbanTask extends Record<string, unknown> {
   column: string;
   type?: 'text' | 'image';
   content?: string;
+  order?: number;
+  imageFileId?: string;
+  imageBucketId?: string;
+  boardId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface KanbanColumn extends Record<string, unknown> {
@@ -55,6 +86,44 @@ export const convertToKanbanFormat = (boardData: BoardData): KanbanBoardData => 
   );
 
   return { columns, tasks };
+};
+
+// Convert Appwrite tasks to Kanban format
+export const convertAppwriteTasksToKanban = (tasks: AppwriteTask[]): KanbanBoardData => {
+  const columns: KanbanColumn[] = [
+    { id: 'todo', name: 'To Do' },
+    { id: 'inprogress', name: 'In Progress' },
+    { id: 'done', name: 'Done' }
+  ];
+
+  const kanbanTasks: KanbanTask[] = tasks.map(task => ({
+    id: task.$id,
+    name: task.title,
+    column: task.status,
+    type: task.imageFileId ? 'image' : 'text',
+    content: task.description || undefined,
+    order: task.order,
+    imageFileId: task.imageFileId,
+    imageBucketId: task.imageBucketId,
+    boardId: task.boardId || undefined,
+    createdAt: task.$createdAt,
+    updatedAt: task.$updatedAt
+  }));
+
+  return { columns, tasks: kanbanTasks };
+};
+
+// Convert Kanban task to Appwrite format for updates
+export const convertKanbanTaskToAppwrite = (task: KanbanTask): Partial<CreateTaskData> => {
+  return {
+    title: task.name,
+    description: task.content,
+    status: task.column as 'todo' | 'inprogress' | 'done',
+    order: task.order || 0,
+    imageFileId: task.imageFileId,
+    imageBucketId: task.imageBucketId,
+    boardId: task.boardId
+  };
 };
 
 export const convertFromKanbanFormat = (kanbanData: KanbanBoardData): BoardData => {

@@ -1,4 +1,4 @@
-import { Client, Account, ID } from 'appwrite';
+import { Client, Account, ID, Databases, Query } from 'appwrite';
 
 // Appwrite configuration
 const client = new Client();
@@ -10,8 +10,15 @@ client
 // Export the account service
 export const account = new Account(client);
 
+// Export the databases service
+export const databases = new Databases(client);
+
+// Database and collection configuration
+export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'trello-ai';
+export const TASKS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_TASKS_COLLECTION_ID || 'tasks';
+
 // Export ID for generating unique user IDs
-export { ID };
+export { ID, Query };
 
 // Export client for potential future use
 export default client;
