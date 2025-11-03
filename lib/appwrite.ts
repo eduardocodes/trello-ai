@@ -1,4 +1,4 @@
-import { Client, Account, ID, Databases, Query } from 'appwrite';
+import { Client, Account, ID, Databases, Query, Permission, Role } from 'appwrite';
 
 // Appwrite configuration
 const client = new Client();
@@ -18,7 +18,7 @@ export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'trel
 export const TASKS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_TASKS_COLLECTION_ID || 'tasks';
 
 // Export ID for generating unique user IDs
-export { ID, Query };
+export { ID, Query, Permission, Role };
 
 // Export client for potential future use
 export default client;

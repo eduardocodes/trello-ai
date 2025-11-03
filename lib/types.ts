@@ -10,6 +10,7 @@ export interface AppwriteTask {
   imageFileId?: string;
   imageBucketId?: string;
   boardId?: string | null;
+  userId?: string | null;
   $createdAt: string;
   $updatedAt: string;
 }
@@ -23,6 +24,7 @@ export interface CreateTaskData {
   imageFileId?: string;
   imageBucketId?: string;
   boardId?: string;
+  userId?: string;
 }
 
 // Legacy interfaces for backward compatibility

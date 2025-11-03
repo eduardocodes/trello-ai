@@ -1,4 +1,4 @@
-import { databases, DATABASE_ID, TASKS_COLLECTION_ID, ID, Query } from './appwrite';
+import { databases, DATABASE_ID, TASKS_COLLECTION_ID, ID, Query, account, Permission, Role } from './appwrite';
 import { AppwriteTask, CreateTaskData } from './types';
 
 /**
@@ -12,7 +12,12 @@ export class TaskService {
    */
   static async getAllTasks(boardId?: string): Promise<AppwriteTask[]> {
     try {
-      const queries = boardId ? [Query.equal('boardId', boardId)] : [];
+      // Ensure we only fetch tasks for the current user
+      const user = await account.get();
+      const queries = [Query.equal('userId', user.$id)];
+      if (boardId) {
+        queries.push(Query.equal('boardId', boardId));
+      }
       
       const response = await databases.listDocuments(
         DATABASE_ID,
@@ -34,11 +39,18 @@ export class TaskService {
    */
   static async createTask(taskData: CreateTaskData): Promise<AppwriteTask> {
     try {
+      const user = await account.get();
+      const dataWithUser = { ...taskData, userId: user.$id };
       const response = await databases.createDocument(
         DATABASE_ID,
         TASKS_COLLECTION_ID,
         ID.unique(),
-        taskData
+        dataWithUser,
+        [
+          Permission.read(Role.user(user.$id)),
+          Permission.update(Role.user(user.$id)),
+          Permission.delete(Role.user(user.$id)),
+        ]
       );
 
       return response as unknown as AppwriteTask;
@@ -96,12 +108,13 @@ export class TaskService {
    */
   static async getNextOrder(status: 'todo' | 'inprogress' | 'done', boardId?: string): Promise<number> {
     try {
+      const user = await account.get();
       const queries = [
         Query.equal('status', status),
+        Query.equal('userId', user.$id),
         Query.orderDesc('order'),
         Query.limit(1)
       ];
-      
       if (boardId) {
         queries.push(Query.equal('boardId', boardId));
       }
