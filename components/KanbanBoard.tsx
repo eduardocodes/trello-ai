@@ -64,6 +64,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editExistingImageId, setEditExistingImageId] = useState<string | null>(null);
   const [editImageDeleted, setEditImageDeleted] = useState(false);
+  const [editModalLoading, setEditModalLoading] = useState(false);
 
   // Track original column during drag to detect status changes reliably
   const dragStartColumnRef = useRef<string | null>(null);
@@ -299,6 +300,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
     setEditExistingImageId(null);
     setEditImageFile(null);
     setEditImageDeleted(false);
+    setEditModalLoading(false);
   };
 
   const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -321,6 +323,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
         setError('Please enter the task name.');
         return;
       }
+
+      setEditModalLoading(true);
+      setError(null); // Clear any previous errors
 
       const originalTask = kanbanData.tasks.find(t => t.id === editTaskId);
       if (!originalTask) return;
@@ -354,6 +359,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
         } catch (error) {
           console.error('Failed to upload new image:', error);
           setError('Failed to upload image. Please try again.');
+          setEditModalLoading(false);
           return;
         }
       }
@@ -383,6 +389,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                 content: updated.description || undefined,
                 column: updated.status,
                 order: updates.order ?? task.order,
+                type: newImageFileId ? 'image' : 'text',
                 imageFileId: newImageFileId,
                 updatedAt: updated.$updatedAt
               }
@@ -390,10 +397,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
         )
       }));
 
-      setIsEditModalOpen(false);
+      closeEditTaskModal(); // This will reset loading state and close modal
     } catch (error) {
       console.error('Error updating task:', error);
       setError('Failed to update task. Please try again.');
+      setEditModalLoading(false);
     }
   };
 
@@ -883,8 +891,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button onClick={closeEditTaskModal} className="px-3 py-1 text-sm rounded border cursor-pointer">Cancel</button>
-            <button onClick={handleUpdateTaskFromModal} className="px-3 py-1 text-sm rounded bg-blue-500 text-white cursor-pointer">Save</button>
+            <button 
+              onClick={closeEditTaskModal} 
+              disabled={editModalLoading}
+              className="px-3 py-1 text-sm rounded border disabled:opacity-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleUpdateTaskFromModal} 
+              disabled={editModalLoading}
+              className="px-3 py-1 text-sm rounded bg-blue-500 text-white disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+            >
+              {editModalLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {editModalLoading ? 'Saving...' : 'Save'}
+            </button>
           </div>
         </div>
       </Modal>
