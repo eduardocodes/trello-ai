@@ -2,47 +2,76 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { signIn, AuthError } from '../lib/auth';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    rememberMe: false
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{email?: string; password?: string}>({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [successMessage, setSuccessMessage] = useState('');
 
   const validateForm = () => {
-    const newErrors: {email?: string; password?: string} = {};
-    
-    if (!email) {
+    const newErrors: {[key: string]: string} = {};
+
+    if (!formData.email) {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email address';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
     }
-    
-    if (!password) {
+
+    if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (password.length < 6) {
+    } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
     
     setIsLoading(true);
+    setErrors({});
+    setSuccessMessage('');
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Login attempt:', { email, password });
+    try {
+      // Sign in with Appwrite
+      await signIn(formData.email, formData.password);
+      
+      setSuccessMessage('Login successful! Redirecting to dashboard...');
+      
+      // Redirect to dashboard after successful login
+      setTimeout(() => {
+        router.push('/dashboard'); // You can change this to your desired route
+      }, 1500);
+      
+    } catch (error) {
+      const authError = error as AuthError;
+      setErrors({ 
+        submit: authError.message || 'Failed to sign in. Please check your credentials.' 
+      });
+    } finally {
       setIsLoading(false);
-      // Here you would typically handle the actual login logic
-    }, 1000);
+    }
   };
 
   return (
@@ -65,6 +94,20 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+          {/* Success Message */}
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-green-800 dark:text-green-200 text-sm font-medium">{successMessage}</p>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {errors.submit && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-red-800 dark:text-red-200 text-sm font-medium">{errors.submit}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
@@ -73,9 +116,10 @@ export default function LoginPage() {
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={handleInputChange}
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                   errors.email 
                     ? 'border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-500' 
@@ -96,9 +140,10 @@ export default function LoginPage() {
               </label>
               <input
                 id="password"
+                name="password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={formData.password}
+                onChange={handleInputChange}
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                   errors.password 
                     ? 'border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-500' 
@@ -117,6 +162,9 @@ export default function LoginPage() {
               <label className="flex items-center">
                 <input
                   type="checkbox"
+                  name="rememberMe"
+                  checked={formData.rememberMe}
+                  onChange={handleInputChange}
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                 />
                 <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Remember me</span>

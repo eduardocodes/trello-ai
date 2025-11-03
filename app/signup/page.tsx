@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { signUp, AuthError } from '../../lib/auth';
+import { useRouter } from 'next/navigation';
 
 export default function SignUpPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,6 +17,7 @@ export default function SignUpPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [successMessage, setSuccessMessage] = useState('');
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -81,13 +85,28 @@ export default function SignUpPage() {
     }
     
     setIsLoading(true);
+    setErrors({});
+    setSuccessMessage('');
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Sign up attempt:', formData);
+    try {
+      // Create account with Appwrite
+      await signUp(formData.email, formData.password, formData.name);
+      
+      setSuccessMessage('Account created successfully! Redirecting to dashboard...');
+      
+      // Redirect to dashboard or home page after successful signup
+      setTimeout(() => {
+        router.push('/dashboard'); // You can change this to your desired route
+      }, 2000);
+      
+    } catch (error) {
+      const authError = error as AuthError;
+      setErrors({ 
+        submit: authError.message || 'Failed to create account. Please try again.' 
+      });
+    } finally {
       setIsLoading(false);
-      // Here you would typically handle the actual registration logic
-    }, 1500);
+    }
   };
 
   return (
@@ -110,6 +129,20 @@ export default function SignUpPage() {
 
         {/* Sign Up Form */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+          {/* Success Message */}
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-green-800 dark:text-green-200 text-sm font-medium">{successMessage}</p>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {errors.submit && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-red-800 dark:text-red-200 text-sm font-medium">{errors.submit}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Full Name Field */}
             <div>
