@@ -87,7 +87,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo and Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500 rounded-xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 rounded-xl mb-4">
             <span className="text-white font-bold text-2xl">T</span>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
