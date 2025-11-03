@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { KanbanTask } from './types';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -14,13 +15,14 @@ export interface TaskCounts {
 export interface SummaryOptions {
   taskCounts: TaskCounts;
   timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+  tasks?: KanbanTask[];
 }
 
 /**
  * Generate an AI-powered summary message for the Kanban board
  */
 export async function generateAISummary(options: SummaryOptions): Promise<string> {
-  const { taskCounts } = options;
+  const { taskCounts, tasks = [] } = options;
   const currentHour = new Date().getHours();
   
   // Determine time of day
@@ -36,26 +38,47 @@ export async function generateAISummary(options: SummaryOptions): Promise<string
   }
 
   const totalTasks = taskCounts.todo + taskCounts.inProgress + taskCounts.done;
-  
-  // Create a contextual prompt for the AI
-  const prompt = `You are a productivity assistant for a Kanban board application. Generate a brief, encouraging, and insightful summary message for the user based on their current task status.
 
-Current Status:
-- To Do: ${taskCounts.todo} tasks
-- In Progress: ${taskCounts.inProgress} tasks  
-- Done: ${taskCounts.done} tasks
-- Total Tasks: ${totalTasks}
+  // Build compact, strictly grounded task context (limit per column)
+  const byColumn: Record<'todo' | 'inprogress' | 'done', { name: string; content?: string }[]> = {
+    todo: [],
+    inprogress: [],
+    done: [],
+  };
+
+  for (const t of tasks) {
+    const col = (t.column as 'todo' | 'inprogress' | 'done') ?? 'todo';
+    if (byColumn[col].length < 5) {
+      byColumn[col].push({ name: t.name, content: t.content?.slice(0, 120) });
+    }
+  }
+
+  const formatList = (items: { name: string; content?: string }[]) =>
+    items.map(i => (i.content ? `${i.name} — ${i.content}` : i.name)).join('; ');
+
+  const todoList = formatList(byColumn.todo);
+  const inProgressList = formatList(byColumn.inprogress);
+  const doneList = formatList(byColumn.done);
+
+  // Create a strictly grounded prompt for the AI
+  const prompt = `You are a focused productivity assistant.
+You must generate a short summary that is DIFFERENT in wording each time, but STRICTLY grounded in the provided tasks. Do NOT invent tasks or details. Mention only what exists.
+
+Context:
 - Time of Day: ${timeOfDay}
+- Totals: To Do=${taskCounts.todo}, In Progress=${taskCounts.inProgress}, Done=${taskCounts.done}, All=${totalTasks}
+- To Do: ${todoList || '—'}
+- In Progress: ${inProgressList || '—'}
+- Done: ${doneList || '—'}
 
-Guidelines:
-- Keep the message concise (1-2 sentences, max 100 characters)
-- Be encouraging and motivational
-- Provide contextual insights based on task distribution
-- Consider the time of day in your tone
-- Use a friendly, professional tone
-- Focus on productivity and progress
+Rules:
+- 1–2 sentences, max 160 characters.
+- Reference specific tasks or groups when possible.
+- Vary tone and wording; avoid boilerplate.
+- Be actionable and encouraging; never generic.
+- Use ONLY the given context.
 
-Generate only the summary message, no additional text or formatting.`;
+Return only the summary.`;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -63,15 +86,13 @@ Generate only the summary message, no additional text or formatting.`;
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful productivity assistant that generates brief, encouraging summary messages for task management.'
+          content:
+            'You generate concise, varied summaries grounded strictly in the provided task context. Never hallucinate; do not add external facts.'
         },
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
-      max_tokens: 100,
-      temperature: 0.7,
+      max_tokens: 120,
+      temperature: 0.85,
     });
 
     const message = completion.choices[0]?.message?.content?.trim();
@@ -79,7 +100,7 @@ Generate only the summary message, no additional text or formatting.`;
     if (!message) {
       throw new Error('No message generated from OpenAI');
     }
-
+    
     return message;
   } catch (error) {
     console.error('Error generating AI summary:', error);

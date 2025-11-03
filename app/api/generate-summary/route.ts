@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateAISummary, type TaskCounts } from '@/lib/openai';
+import type { KanbanTask } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { taskCounts }: { taskCounts: TaskCounts } = body;
+    const { taskCounts, tasks }: { taskCounts: TaskCounts; tasks?: KanbanTask[] } = body;
 
     // Validate the request body
     if (!taskCounts || typeof taskCounts.todo !== 'number' || 
@@ -16,8 +17,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Sanitize tasks input (optional array)
+    const safeTasks: KanbanTask[] = Array.isArray(tasks)
+      ? tasks
+          .filter(t => t && typeof t.id === 'string' && typeof t.name === 'string')
+          .map(t => ({
+            id: t.id,
+            name: t.name,
+            column: t.column,
+            content: typeof t.content === 'string' ? t.content : undefined,
+          }))
+      : [];
+
     // Generate AI summary
-    const summary = await generateAISummary({ taskCounts });
+    const summary = await generateAISummary({ taskCounts, tasks: safeTasks });
 
     return NextResponse.json({ summary });
   } catch (error) {

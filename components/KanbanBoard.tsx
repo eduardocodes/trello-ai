@@ -98,7 +98,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
     }
   };
 
-  // Generate AI summary
+  // Generate AI summary using detailed task context
   const generateAISummary = async (taskCounts: { todo: number; inProgress: number; done: number }) => {
     // Cache for 5 minutes to reduce API calls
     const now = Date.now();
@@ -117,7 +117,15 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ taskCounts }),
+        body: JSON.stringify({
+          taskCounts,
+          tasks: kanbanData.tasks.map(t => ({
+            id: t.id,
+            name: t.name,
+            column: t.column,
+            content: typeof t.content === 'string' ? t.content : undefined,
+          })),
+        }),
       });
 
       const data = await response.json();
@@ -128,6 +136,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
 
       setAiSummary(data.summary);
       setLastSummaryTime(now);
+      // Persist to sessionStorage so a Strict Mode remount can restore without refetching
+      if (typeof window !== 'undefined') {
+        try {
+          window.sessionStorage.setItem('ai_summary_text', data.summary || '');
+          window.sessionStorage.setItem('ai_summary_time', String(now));
+        } catch {}
+      }
       
       if (data.fallback) {
         setAiSummaryError('Using fallback message');
@@ -145,10 +160,36 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   // Generate AI summary when task counts change
   useEffect(() => {
     const taskCounts = {
-      todo: kanbanData.tasks.filter(task => task.columnId === 'todo').length,
-      inProgress: kanbanData.tasks.filter(task => task.columnId === 'inprogress').length,
-      done: kanbanData.tasks.filter(task => task.columnId === 'done').length,
+      todo: kanbanData.tasks.filter(task => task.column === 'todo').length,
+      inProgress: kanbanData.tasks.filter(task => task.column === 'inprogress').length,
+      done: kanbanData.tasks.filter(task => task.column === 'done').length,
     };
+
+    // Build a stable signature from counts + task snapshot to dedupe in dev (React Strict Mode)
+    const signature = JSON.stringify({
+      counts: taskCounts,
+      tasks: kanbanData.tasks.map(t => `${t.id}:${t.column}:${t.name}:${(t.content || '').slice(0, 60)}`).join('|'),
+    });
+
+    // Skip if we've already requested a summary for the same signature recently
+    const key = 'ai_summary_signature';
+    if (typeof window !== 'undefined') {
+      const lastSig = window.sessionStorage.getItem(key);
+      const cachedText = window.sessionStorage.getItem('ai_summary_text');
+      const cachedTimeRaw = window.sessionStorage.getItem('ai_summary_time');
+      const cachedTime = cachedTimeRaw ? Number(cachedTimeRaw) : 0;
+
+      if (lastSig === signature && cachedText) {
+        // Restore cached summary on re-mount if present
+        if (!aiSummary) {
+          setAiSummary(cachedText);
+          if (cachedTime) setLastSummaryTime(cachedTime);
+        }
+        return; // Prevent duplicate request/display caused by Strict Mode re-mounts when summary exists
+      }
+      // Signature differs OR we don't have a cached summary yet — proceed and store the new signature
+      window.sessionStorage.setItem(key, signature);
+    }
 
     // Debounce the API call
     const timeoutId = setTimeout(() => {
@@ -531,7 +572,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
           {aiSummaryLoading ? (
             <div className="flex items-center space-x-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <p className="text-gray-600 text-sm">Generating personalized summary with AI....</p>
+              <p className="text-gray-600 text-sm">Generating contextual summary…</p>
             </div>
           ) : aiSummary ? (
             <div>
@@ -547,10 +588,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
           ) : (
             <div>
               <p className="text-gray-700 text-sm">
-                Hello! Today there are {taskCounts.todo} tasks in To Do, {taskCounts.inProgress} In Progress, and {taskCounts.done} in Done.
-              </p>
-              <p className="text-gray-600 text-xs mt-1">
-                Have a productive day.
+                No AI summary yet. Add tasks or update statuses to get a contextual snapshot.
               </p>
             </div>
           )}
