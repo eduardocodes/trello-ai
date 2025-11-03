@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { signIn, AuthError } from '../lib/auth';
+import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { signIn, user, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -15,6 +16,13 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -44,6 +52,7 @@ export default function LoginPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
     if (!validateForm()) {
       return;
@@ -54,20 +63,19 @@ export default function LoginPage() {
     setSuccessMessage('');
     
     try {
-      // Sign in with Appwrite
+      // Sign in using AuthContext
       await signIn(formData.email, formData.password);
       
       setSuccessMessage('Login successful! Redirecting to dashboard...');
       
       // Redirect to dashboard after successful login
       setTimeout(() => {
-        router.push('/dashboard'); // You can change this to your desired route
+        router.push('/dashboard');
       }, 1500);
       
-    } catch (error) {
-      const authError = error as AuthError;
+    } catch (error: any) {
       setErrors({ 
-        submit: authError.message || 'Failed to sign in. Please check your credentials.' 
+        submit: error.message || 'Failed to sign in. Please check your credentials.' 
       });
     } finally {
       setIsLoading(false);

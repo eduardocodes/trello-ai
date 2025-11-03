@@ -2,25 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { account } from '../../lib/appwrite';
+import { useAuth } from '../../contexts/AuthContext';
 import Header from '../../components/Header';
 import KanbanBoard from '../../components/KanbanBoard';
 
-interface User {
-  $id: string;
-  email: string;
-  name: string;
-}
-
 const DashboardPage: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, signOut, isAuthenticated } = useAuth();
   const [contentLoaded, setContentLoaded] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (!loading && !isAuthenticated) {
+      router.push('/');
+    }
+  }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
     if (!loading && user) {
@@ -30,26 +25,14 @@ const DashboardPage: React.FC = () => {
     }
   }, [loading, user]);
 
-  const checkAuth = async () => {
-    try {
-      const currentUser = await account.get();
-      setUser(currentUser);
-    } catch (error) {
-      console.log('User not authenticated:', error);
-      router.push('/login');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleLogout = async () => {
     try {
-      await account.deleteSession('current');
-      router.push('/login');
+      await signOut();
+      router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
       // Force redirect even if logout fails
-      router.push('/login');
+      router.push('/');
     }
   };
 

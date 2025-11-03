@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { signUp, AuthError } from '../../lib/auth';
+import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { signUp, user, loading } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,6 +19,13 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -100,9 +108,8 @@ export default function SignUpPage() {
       }, 2000);
       
     } catch (error) {
-      const authError = error as AuthError;
       setErrors({ 
-        submit: authError.message || 'Failed to create account. Please try again.' 
+        submit: (error as any).message || 'Failed to create account. Please try again.' 
       });
     } finally {
       setIsLoading(false);
