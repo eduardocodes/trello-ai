@@ -536,19 +536,45 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
             className="w-full border rounded px-3 py-2 text-sm min-h-[80px]"
           />
           <div className="grid grid-cols-3 gap-2">
-            {(['todo','inprogress','done'] as const).map((col) => (
-              <button
-                key={col}
-                onClick={() => setModalColumn(col)}
-                className={`${modalColumn === col ? 'bg-pink-400' : 'bg-pink-200'} rounded px-2 py-2 text-sm cursor-pointer`}
-              >
-                {col === 'todo' ? 'To Do' : col === 'inprogress' ? 'In Progress' : 'Done'}
-              </button>
-            ))}
+            {(['todo','inprogress','done'] as const).map((col) => {
+              const getColumnColors = (column: string, isSelected: boolean) => {
+                switch (column) {
+                  case 'todo':
+                    return isSelected ? 'bg-red-400' : 'bg-red-200';
+                  case 'inprogress':
+                    return isSelected ? 'bg-blue-400' : 'bg-blue-200';
+                  case 'done':
+                    return isSelected ? 'bg-green-400' : 'bg-green-200';
+                  default:
+                    return isSelected ? 'bg-gray-400' : 'bg-gray-200';
+                }
+              };
+              
+              return (
+                <button
+                  key={col}
+                  onClick={() => setModalColumn(col)}
+                  className={`${getColumnColors(col, modalColumn === col)} rounded px-2 py-2 text-sm cursor-pointer`}
+                >
+                  {col === 'todo' ? 'To Do' : col === 'inprogress' ? 'In Progress' : 'Done'}
+                </button>
+              );
+            })}
           </div>
           <div>
-            <label className="block mb-1 text-sm">Upload Image</label>
-            <input type="file" accept="image/*" onChange={handleModalFileChange} className="w-full" />
+            <button 
+              onClick={() => document.getElementById('modal-file-input')?.click()}
+              className="block mb-2 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded px-3 py-2 cursor-pointer transition-colors"
+            >
+              Upload Image
+            </button>
+            <input 
+              id="modal-file-input"
+              type="file" 
+              accept="image/*" 
+              onChange={handleModalFileChange} 
+              className="hidden" 
+            />
             {modalImageFile && (
               <div className="mt-2">
                 <img 
