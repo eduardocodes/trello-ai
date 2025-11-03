@@ -78,7 +78,7 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Header with enhanced styling */}
-      <div className={`relative z-10 transition-all duration-700 ${contentLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+      <div className={`relative z-50 transition-all duration-700 ${contentLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
         <div className="backdrop-blur-sm bg-white/80 border-b border-white/20 shadow-lg">
           <Header 
             userEmail={user.email} 
