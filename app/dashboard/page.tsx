@@ -49,15 +49,15 @@ const DashboardPage: React.FC = () => {
         <div className="text-center relative z-10 animate-fade-in">
           {/* Enhanced loading spinner */}
           <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent bg-gradient-to-r from-blue-500 to-purple-500 mx-auto"></div>
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent bg-gradient-to-r from-purple-500 to-pink-500 mx-auto absolute top-0 left-1/2 transform -translate-x-1/2 animate-reverse-spin"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent bg-gradient-to-r from-blue-400 to-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent bg-gradient-to-r from-blue-500 to-blue-700 mx-auto absolute top-0 left-1/2 transform -translate-x-1/2 animate-reverse-spin"></div>
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg"></div>
           </div>
           <p className="mt-6 text-gray-700 font-medium text-lg animate-pulse">Loading your workspace...</p>
           <div className="mt-2 flex justify-center space-x-1">
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce animation-delay-200"></div>
-            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce animation-delay-400"></div>
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce animation-delay-200"></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce animation-delay-400"></div>
           </div>
         </div>
       </div>
