@@ -566,17 +566,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   return (
     <div className="flex flex-col h-full">
       {/* Summary Message */}
-      <div className="flex flex-col items-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-700 mb-3">AI Summary</h3>
-        <div className="bg-gray-100 rounded-lg px-6 py-3 text-center min-h-[60px] flex items-center justify-center">
+      <div className="flex flex-col items-center mb-4 md:mb-6 px-4 md:px-0">
+        <h3 className="text-base md:text-lg font-semibold text-gray-700 mb-2 md:mb-3">AI Summary</h3>
+        <div className="bg-gray-100 rounded-lg px-4 md:px-6 py-3 text-center min-h-[60px] flex items-center justify-center w-full max-w-4xl">
           {aiSummaryLoading ? (
             <div className="flex items-center space-x-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <p className="text-gray-600 text-sm">Generating AI summary…</p>
+              <p className="text-gray-600 text-xs md:text-sm">Generating AI summary…</p>
             </div>
           ) : aiSummary ? (
             <div>
-              <p className="text-gray-700 text-sm font-medium">
+              <p className="text-gray-700 text-xs md:text-sm font-medium">
                 {aiSummary}
               </p>
               {aiSummaryError && (
@@ -587,7 +587,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
             </div>
           ) : (
             <div>
-              <p className="text-gray-700 text-sm">
+              <p className="text-gray-700 text-xs md:text-sm">
                 No AI summary yet. Add tasks or update statuses to get a contextual snapshot.
               </p>
             </div>
@@ -616,7 +616,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
         </div>
       ) : (
         /* Kanban Board */
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 px-4 md:px-0">
         <KanbanProvider
           columns={kanbanData.columns}
           data={kanbanData.tasks}
@@ -720,8 +720,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
         isOpen={isModalOpen}
         onRequestClose={closeCreateTaskModal}
         contentLabel="Add a task"
-        className="relative z-[1001] max-w-sm w-full bg-white rounded-lg shadow-lg p-4 mx-auto outline-none"
-        overlayClassName="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center"
+        className="relative z-[1001] max-w-sm w-full bg-white rounded-lg shadow-lg p-4 mx-4 md:mx-auto outline-none"
+        overlayClassName="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4"
       >
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">Add a task</h2>
@@ -814,8 +814,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
         isOpen={isEditModalOpen}
         onRequestClose={closeEditTaskModal}
         contentLabel="Edit task"
-        className="relative z-[1001] max-w-sm w-full bg-white rounded-lg shadow-lg p-4 mx-auto outline-none"
-        overlayClassName="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center"
+        className="relative z-[1001] max-w-sm w-full bg-white rounded-lg shadow-lg p-4 mx-4 md:mx-auto outline-none"
+        overlayClassName="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4"
       >
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">Edit task</h2>
