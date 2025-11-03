@@ -602,7 +602,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
               
               <KanbanCards id={column.id} className="flex-1 min-h-0">
                 {(task: KanbanTask) => (
-                  <KanbanCard key={task.id} {...task} className="group relative w-full max-w-sm">
+                  <KanbanCard key={task.id} {...task} className="group relative w-full">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         {task.type === 'text' ? (
