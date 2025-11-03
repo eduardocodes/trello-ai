@@ -602,19 +602,19 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
               
               <KanbanCards id={column.id} className="flex-1 min-h-0">
                 {(task: KanbanTask) => (
-                  <KanbanCard key={task.id} {...task} className="group relative">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
+                  <KanbanCard key={task.id} {...task} className="group relative w-full max-w-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
                         {task.type === 'text' ? (
                           <>
-                            <p className="m-0 font-medium text-sm">{task.name}</p>
+                            <p className="m-0 font-medium text-sm break-words hyphens-auto leading-relaxed">{task.name}</p>
                             {task.content ? (
-                              <p className="mt-1 text-xs text-gray-600 truncate">{task.content}</p>
+                              <p className="mt-2 text-xs text-gray-600 break-words hyphens-auto leading-relaxed max-h-20 overflow-y-auto">{task.content}</p>
                             ) : null}
                           </>
                         ) : (
                           <>
-                            <p className="m-0 font-medium text-sm mb-2">{task.name}</p>
+                            <p className="m-0 font-medium text-sm mb-2 break-words hyphens-auto leading-relaxed">{task.name}</p>
                             {task.imageFileId ? (
                               <img 
                                 src={TaskService.getImageUrl(task.imageFileId)} 
@@ -631,14 +631,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                               Image
                             </div>
                             {task.content ? (
-                              <p className="mt-1 text-xs text-gray-600 truncate">{task.content}</p>
+                              <p className="mt-2 text-xs text-gray-600 break-words hyphens-auto leading-relaxed max-h-20 overflow-y-auto">{task.content}</p>
                             ) : null}
                           </>
                         )}
                       </div>
                       
                       {/* Edit/Delete buttons */}
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 ml-2">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col space-y-1 flex-shrink-0">
                         <button
                           type="button"
                           onPointerDown={(e) => { e.stopPropagation(); }}

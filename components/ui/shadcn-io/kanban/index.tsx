@@ -121,24 +121,24 @@ export const KanbanCard = <T extends KanbanItemProps = KanbanItemProps>({
       <div style={style} {...listeners} {...attributes} ref={setNodeRef}>
         <Card
           className={cn(
-            'cursor-grab gap-4 rounded-md p-3 shadow-sm',
+            'cursor-grab gap-4 rounded-md p-3 shadow-sm w-full min-w-0',
             isDragging && 'pointer-events-none cursor-grabbing opacity-30',
             className
           )}
         >
-          {children ?? <p className="m-0 font-medium text-sm">{name}</p>}
+          {children ?? <p className="m-0 font-medium text-sm break-words hyphens-auto leading-relaxed">{name}</p>}
         </Card>
       </div>
       {activeCardId === id && (
         <t.In>
           <Card
             className={cn(
-              'cursor-grab gap-4 rounded-md p-3 shadow-sm ring-2 ring-primary',
+              'cursor-grab gap-4 rounded-md p-3 shadow-sm ring-2 ring-primary w-full min-w-0',
               isDragging && 'cursor-grabbing',
               className
             )}
           >
-            {children ?? <p className="m-0 font-medium text-sm">{name}</p>}
+            {children ?? <p className="m-0 font-medium text-sm break-words hyphens-auto leading-relaxed">{name}</p>}
           </Card>
         </t.In>
       )}
