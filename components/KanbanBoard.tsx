@@ -48,6 +48,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   const [modalImageFile, setModalImageFile] = useState<File | null>(null);
   const [modalDescription, setModalDescription] = useState('');
 
+  // Edit modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editTaskId, setEditTaskId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editColumn, setEditColumn] = useState<'todo' | 'inprogress' | 'done'>('todo');
+
   useEffect(() => {
     // Bind react-modal to the app element for accessibility
     Modal.setAppElement('body');
@@ -178,20 +185,69 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
   };
 
   // Edit existing task
-  const handleEditTask = async (taskId: string, newName: string) => {
+  const openEditTaskModal = (taskId: string) => {
+    const task = kanbanData.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    setEditTaskId(taskId);
+    setEditTitle(task.name);
+    setEditDescription(task.content || '');
+    setEditColumn(task.column as 'todo' | 'inprogress' | 'done');
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditTaskModal = () => {
+    setIsEditModalOpen(false);
+    setEditTaskId(null);
+    setEditTitle('');
+    setEditDescription('');
+  };
+
+  const handleUpdateTaskFromModal = async () => {
     try {
-      await TaskService.updateTask(taskId, { title: newName });
-      
+      if (!editTaskId) return;
+      if (!editTitle.trim()) {
+        setError('Por favor, informe o nome da tarefa.');
+        return;
+      }
+
+      const originalTask = kanbanData.tasks.find(t => t.id === editTaskId);
+      if (!originalTask) return;
+
+      const updates: Partial<CreateTaskData> = {
+        title: editTitle.trim(),
+        description: editDescription.trim() ? editDescription.trim() : undefined,
+      };
+
+      // If status changed, compute next order for target column
+      if (originalTask.column !== editColumn) {
+        const newOrder = await TaskService.getNextOrder(editColumn, boardId);
+        updates.status = editColumn;
+        updates.order = newOrder;
+      }
+
+      const updated = await TaskService.updateTask(editTaskId, updates);
+
       // Update local state
       setKanbanData(prevData => ({
         ...prevData,
         tasks: prevData.tasks.map(task =>
-          task.id === taskId ? { ...task, name: newName } : task
+          task.id === editTaskId
+            ? {
+                ...task,
+                name: updated.title,
+                content: updated.description || undefined,
+                column: updated.status,
+                order: updates.order ?? task.order,
+                updatedAt: updated.$updatedAt
+              }
+            : task
         )
       }));
+
+      setIsEditModalOpen(false);
     } catch (error) {
-      console.error('Error editing task:', error);
-      setError('Failed to edit task. Please try again.');
+      console.error('Error updating task:', error);
+      setError('Falha ao atualizar tarefa. Tente novamente.');
     }
   };
 
@@ -369,12 +425,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                       {/* Edit/Delete buttons */}
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 ml-2">
                         <button
+                          type="button"
+                          onPointerDown={(e) => { e.stopPropagation(); }}
+                          onMouseDown={(e) => { e.stopPropagation(); }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            const newName = prompt('Editar tarefa:', task.name);
-                            if (newName && newName.trim()) {
-                              handleEditTask(task.id, newName.trim());
-                            }
+                            openEditTaskModal(task.id);
                           }}
                           className="p-1 hover:bg-gray-200 rounded transition-colors"
                           title="Editar tarefa"
@@ -382,6 +438,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
                           <Edit2 size={12} />
                         </button>
                         <button
+                          type="button"
+                          onPointerDown={(e) => { e.stopPropagation(); }}
+                          onMouseDown={(e) => { e.stopPropagation(); }}
                           onClick={(e) => {
                             e.stopPropagation();
                             if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
@@ -444,6 +503,47 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, boardId }) => {
           <div className="flex justify-end gap-2 pt-2">
             <button onClick={closeCreateTaskModal} className="px-3 py-1 text-sm rounded border">Cancelar</button>
             <button onClick={handleCreateTaskFromModal} className="px-3 py-1 text-sm rounded bg-blue-500 text-white">Criar</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Task Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onRequestClose={closeEditTaskModal}
+        contentLabel="Editar tarefa"
+        className="relative z-[1001] max-w-sm w-full bg-white rounded-lg shadow-lg p-4 mx-auto outline-none"
+        overlayClassName="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center"
+      >
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">Editar tarefa</h2>
+          <input
+            type="text"
+            placeholder="Nome da tarefa"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            className="w-full border rounded px-3 py-2 text-sm"
+          />
+          <textarea
+            placeholder="Descrição da tarefa"
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+            className="w-full border rounded px-3 py-2 text-sm min-h-[80px]"
+          />
+          <div className="grid grid-cols-3 gap-2">
+            {(['todo','inprogress','done'] as const).map((col) => (
+              <button
+                key={col}
+                onClick={() => setEditColumn(col)}
+                className={`${editColumn === col ? 'bg-pink-400' : 'bg-pink-200'} rounded px-2 py-2 text-sm`}
+              >
+                {col === 'todo' ? 'To Do' : col === 'inprogress' ? 'In Progress' : 'Done'}
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button onClick={closeEditTaskModal} className="px-3 py-1 text-sm rounded border">Cancelar</button>
+            <button onClick={handleUpdateTaskFromModal} className="px-3 py-1 text-sm rounded bg-blue-500 text-white">Salvar</button>
           </div>
         </div>
       </Modal>
