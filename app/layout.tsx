@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Trello AI - Sign In",
-  description: "Sign in to your Trello AI account to manage your projects with AI-powered productivity tools.",
+  title: "Trello AI",
+  description: "An intelligent Trello clone built with Next.js and Appwrite, enhanced with AI insights for smarter productivity.",
 };
 
 export default function RootLayout({
